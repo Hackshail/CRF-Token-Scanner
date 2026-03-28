@@ -45,6 +45,30 @@ def health_check():
     }), 200
 
 
+@app.route('/metrics', methods=['GET'])
+def get_metrics():
+    """Prometheus metrics endpoint"""
+    return metrics_collector.get_metrics_text(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+
+@app.route('/alerts', methods=['GET'])
+def get_alerts():
+    """Active alerts endpoint"""
+    alerts = metrics_collector.get_active_alerts()
+    alerts_data = [{
+        'id': alert.id,
+        'name': alert.name,
+        'description': alert.description,
+        'severity': alert.severity.value,
+        'status': alert.status.value,
+        'created_at': alert.created_at.isoformat(),
+        'resolved_at': alert.resolved_at.isoformat() if alert.resolved_at else None,
+        'labels': alert.labels
+    } for alert in alerts]
+    
+    return jsonify({'alerts': alerts_data}), 200
+
+
 @app.route('/api/v1/auth/login', methods=['POST'])
 @limiter.limit("5 per minute")
 def login():
