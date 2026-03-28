@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}Scans - CSRF Scanner{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Scans</h1>
+        <p class="text-muted">Manage and monitor security scans</p>
+    </div>
+    <div>
+        <a href="{{ url_for('new_scan') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>New Scan
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card card-dashboard mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select class="form-select" id="status-filter">
+                    <option value="">All Status</option>
+                    <option value="running">Running</option>
+                    <option value="completed">Completed</option>
+                    <option value="failed">Failed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">User</label>
+                <select class="form-select" id="user-filter">
+                    <option value="">All Users</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Date From</label>
+                <input type="date" class="form-control" id="date-from">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Date To</label>
+                <input type="date" class="form-control" id="date-to">
+            </div>
+        </div>
+        <div class="mt-3">
+            <button class="btn btn-outline-primary btn-sm" onclick="applyFilters()">
+                <i class="fas fa-filter me-1"></i>Apply Filters
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
+                <i class="fas fa-times me-1"></i>Clear
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Scans Table -->
+<div class="card card-dashboard">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-list me-2"></i>All Scans
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="scans-table">
+                <thead>
+                    <tr>
+                        <th>Scan ID</th>
+                        <th>Status</th>
+                        <th>User</th>
+                        <th>Start Time</th>
+                        <th>Results</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="scans-tbody">
+                    <tr>
+                        <td colspan="6" class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+<div class="d-flex justify-content-center mt-4" id="pagination">
+    <!-- Pagination will be populated by JavaScript -->
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 1;
+let pageSize = 20;
+let allScans = [];
+let filteredScans = [];
+
+function initScansPage() {
+    loadScans();
+}
+
+function loadScans() {
+    fetch('/api/scans')
+        .then(response => response.json())
+        .then(data => {
+            allScans = data.scans || [];
+            filteredScans = [...allScans];
+            populateUserFilter();
+            renderScansTable();
+        })
+        .catch(error => {
+            console.error('Error loading scans:', error);
+            document.getElementById('scans-tbody').innerHTML =
+                '<tr><td colspan="6" class="text-center text-danger">Error loading scans</td></tr>';
+        });
+}
+
+function populateUserFilter() {
+    const users = [...new Set(allScans.map(scan => scan.user).filter(user => user))];
+    const userFilter = document.getElementById('user-filter');
+
+    users.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user;
+        option.textContent = user;
+        userFilter.appendChild(option);
+    });
+}
+
+function applyFilters() {
+    const statusFilter = document.getElementById('status-filter').value;
+    const userFilter = document.getElementById('user-filter').value;
+    const dateFrom = document.getElementById('date-from').value;
+    const dateTo = document.getElementById('date-to').value;
+
+    filteredScans = allScans.filter(scan => {
+        if (statusFilter && scan.status !== statusFilter) return false;
+        if (userFilter && scan.user !== userFilter) return false;
+
+        if (dateFrom || dateTo) {
+            const scanDate = new Date(scan.start_time).toISOString().split('T')[0];
+            if (dateFrom && scanDate < dateFrom) return false;
+            if (dateTo && scanDate > dateTo) return false;
+        }
+
+        return true;
+    });
+
+    currentPage = 1;
+    renderScansTable();
+}
+
+function clearFilters() {
+    document.getElementById('status-filter').value = '';
+    document.getElementById('user-filter').value = '';
+    document.getElementById('date-from').value = '';
+    document.getElementById('date-to').value = '';
+
+    filteredScans = [...allScans];
+    currentPage = 1;
+    renderScansTable();
+}
+
+function renderScansTable() {
+    const tbody = document.getElementById('scans-tbody');
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const pageScans = filteredScans.slice(startIndex, endIndex);
+
+    if (pageScans.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No scans found</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = pageScans.map(scan => {
+        const statusClass = {
+            'running': 'primary',
+            'completed': 'success',
+            'failed': 'danger',
+            'cancelled': 'secondary'
+        }[scan.status] || 'secondary';
+
+        const statusIcon = {
+            'running': 'play',
+            'completed': 'check',
+            'failed': 'times',
+            'cancelled': 'ban'
+        }[scan.status] || 'question';
+
+        const actions = [];
+        if (scan.status === 'running') {
+            actions.push(`<button class="btn btn-sm btn-outline-danger" onclick="cancelScan('${scan.scan_id}')">
+                <i class="fas fa-stop"></i> Cancel
+            </button>`);
+        }
+        actions.push(`<a href="/scan/${scan.scan_id}" class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-eye"></i> View
+        </a>`);
+
+        return `
+            <tr>
+                <td>
+                    <code>${scan.scan_id}</code>
+                </td>
+                <td>
+                    <span class="badge bg-${statusClass}">
+                        <i class="fas fa-${statusIcon} me-1"></i>${scan.status}
+                    </span>
+                </td>
+                <td>${scan.user || 'Unknown'}</td>
+                <td>${new Date(scan.start_time).toLocaleString()}</td>
+                <td>${scan.results_count || 0}</td>
+                <td>${actions.join(' ')}</td>
+            </tr>
+        `;
+    }).join('');
+
+    renderPagination();
+}
+
+function renderPagination() {
+    const totalPages = Math.ceil(filteredScans.length / pageSize);
+    const pagination = document.getElementById('pagination');
+
+    if (totalPages <= 1) {
+        pagination.innerHTML = '';
+        return;
+    }
+
+    let paginationHtml = '<nav><ul class="pagination">';
+
+    // Previous button
+    paginationHtml += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+        <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">Previous</a>
+    </li>`;
+
+    // Page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === currentPage || (i >= currentPage - 2 && i <= currentPage + 2) ||
+            i === 1 || i === totalPages) {
+            paginationHtml += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+            </li>`;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            paginationHtml += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+        }
+    }
+
+    // Next button
+    paginationHtml += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">Next</a>
+    </li>`;
+
+    paginationHtml += '</ul></nav>';
+    pagination.innerHTML = paginationHtml;
+}
+
+function changePage(page) {
+    currentPage = page;
+    renderScansTable();
+}
+
+function cancelScan(scanId) {
+    if (!confirm('Are you sure you want to cancel this scan?')) return;
+
+    fetch(`/api/scan/${scanId}/cancel`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Scan cancelled successfully');
+            loadScans(); // Reload the scans
+        } else {
+            alert('Failed to cancel scan: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error cancelling scan:', error);
+        alert('Error cancelling scan');
+    });
+}
+
+// Initialize page when loaded
+document.addEventListener('DOMContentLoaded', initScansPage);
+</script>
+{% endblock %}

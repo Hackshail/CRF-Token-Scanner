@@ -1,0 +1,494 @@
+{% extends "base.html" %}
+
+{% block title %}Monitoring - CSRF Scanner{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">System Monitoring</h1>
+        <p class="text-muted">Real-time system health and performance metrics</p>
+    </div>
+    <div>
+        <span id="last-update" class="badge bg-secondary">Loading...</span>
+    </div>
+</div>
+
+<!-- System Health Overview -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card card-dashboard">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-heartbeat me-2"></i>System Health
+                </h5>
+            </div>
+            <div class="card-body" id="health-overview">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card card-dashboard">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-server me-2"></i>API Server Status
+                </h5>
+            </div>
+            <div class="card-body" id="api-status">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Metrics Charts -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card card-dashboard">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-memory me-2"></i>Memory Usage
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="memoryChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card card-dashboard">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-hdd me-2"></i>Disk Usage
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="diskChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Metrics -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card card-dashboard">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tachometer-alt me-2"></i>Performance Metrics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row" id="performance-metrics">
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h4 class="text-primary" id="total-scans">0</h4>
+                                <p class="mb-0">Total Scans</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h4 class="text-success" id="successful-scans">0</h4>
+                                <p class="mb-0">Successful</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h4 class="text-danger" id="failed-scans">0</h4>
+                                <p class="mb-0">Failed</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h4 class="text-warning" id="avg-scan-time">0s</h4>
+                                <p class="mb-0">Avg Scan Time</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Active Alerts -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card card-dashboard">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Active Alerts
+                </h5>
+            </div>
+            <div class="card-body" id="active-alerts">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card card-dashboard">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-download me-2"></i>Export Metrics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="exportMetrics('prometheus')">
+                        <i class="fas fa-code me-2"></i>Prometheus Format
+                    </button>
+                    <button class="btn btn-outline-success" onclick="exportMetrics('json')">
+                        <i class="fas fa-file-code me-2"></i>JSON Format
+                    </button>
+                    <button class="btn btn-outline-info" onclick="refreshMetrics()">
+                        <i class="fas fa-sync me-2"></i>Refresh Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let memoryChart, diskChart;
+let metricsHistory = {
+    memory: [],
+    disk: [],
+    timestamps: []
+};
+
+function initMonitoring() {
+    // Initialize charts
+    initCharts();
+
+    // Load initial data
+    loadMonitoringData();
+
+    // Set up auto-refresh every 30 seconds
+    setInterval(loadMonitoringData, 30000);
+}
+
+function initCharts() {
+    // Memory usage chart
+    const memoryCtx = document.getElementById('memoryChart').getContext('2d');
+    memoryChart = new Chart(memoryCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Memory Usage %',
+                data: [],
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    // Disk usage chart
+    const diskCtx = document.getElementById('diskChart').getContext('2d');
+    diskChart = new Chart(diskCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Disk Usage %',
+                data: [],
+                borderColor: '#764ba2',
+                backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function loadMonitoringData() {
+    // Load health data
+    fetch('/api/monitoring/health')
+        .then(response => response.json())
+        .then(data => {
+            updateHealthOverview(data);
+        })
+        .catch(error => console.error('Error loading health data:', error));
+
+    // Load API status
+    fetch('/health')
+        .then(response => response.json())
+        .then(data => {
+            updateApiStatus(data);
+        })
+        .catch(error => console.error('Error loading API status:', error));
+
+    // Load alerts
+    fetch('/api/monitoring/alerts')
+        .then(response => response.json())
+        .then(data => {
+            updateActiveAlerts(data.alerts);
+        })
+        .catch(error => console.error('Error loading alerts:', error));
+
+    // Load metrics
+    fetch('/api/monitoring/metrics')
+        .then(response => response.text())
+        .then(data => {
+            const parsedMetrics = parsePrometheusMetrics(data);
+            updatePerformanceMetrics(parsedMetrics);
+            updateCharts(parsedMetrics);
+        })
+        .catch(error => console.error('Error loading metrics:', error));
+
+    // Update timestamp
+    document.getElementById('last-update').textContent =
+        `Last updated: ${new Date().toLocaleTimeString()}`;
+}
+
+function updateHealthOverview(health) {
+    const statusClass = {
+        'healthy': 'success',
+        'unhealthy': 'danger',
+        'unknown': 'warning'
+    }[health.status] || 'warning';
+
+    const statusIcon = {
+        'healthy': 'check-circle',
+        'unhealthy': 'times-circle',
+        'unknown': 'question-circle'
+    }[health.status] || 'question-circle';
+
+    const healthHtml = `
+        <div class="d-flex align-items-center mb-3">
+            <i class="fas fa-${statusIcon} fa-2x text-${statusClass} me-3"></i>
+            <div>
+                <h5 class="mb-1 text-${statusClass}">${health.status.toUpperCase()}</h5>
+                <small class="text-muted">Last checked: ${new Date(health.timestamp).toLocaleString()}</small>
+            </div>
+        </div>
+        <div class="row text-center">
+            <div class="col-6">
+                <div class="p-2">
+                    <i class="fas fa-memory fa-2x text-info mb-2"></i>
+                    <h6>${health.checks?.memory?.usage_percent?.toFixed(1) || 'N/A'}%</h6>
+                    <small class="text-muted">Memory</small>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="p-2">
+                    <i class="fas fa-hdd fa-2x text-warning mb-2"></i>
+                    <h6>${health.checks?.disk?.usage_percent?.toFixed(1) || 'N/A'}%</h6>
+                    <small class="text-muted">Disk</small>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('health-overview').innerHTML = healthHtml;
+}
+
+function updateApiStatus(data) {
+    const statusHtml = `
+        <div class="text-center">
+            <i class="fas fa-server fa-3x text-success mb-3"></i>
+            <h5 class="text-success">ONLINE</h5>
+            <p class="text-muted mb-0">Version: ${data.version || '1.0.0'}</p>
+            <p class="text-muted">Uptime: ${data.timestamp ? new Date(data.timestamp).toLocaleString() : 'Unknown'}</p>
+        </div>
+    `;
+
+    document.getElementById('api-status').innerHTML = statusHtml;
+}
+
+function updatePerformanceMetrics(metrics) {
+    document.getElementById('total-scans').textContent = metrics.csrf_scans_total || 0;
+    document.getElementById('successful-scans').textContent = (metrics.csrf_scans_total || 0) - (metrics.csrf_scans_failed_total || 0);
+    document.getElementById('failed-scans').textContent = metrics.csrf_scans_failed_total || 0;
+
+    const avgTime = metrics.csrf_scan_duration_seconds_sum && metrics.csrf_scan_duration_seconds_count
+        ? (metrics.csrf_scan_duration_seconds_sum / metrics.csrf_scan_duration_seconds_count).toFixed(1)
+        : 0;
+    document.getElementById('avg-scan-time').textContent = `${avgTime}s`;
+}
+
+function updateCharts(metrics) {
+    const now = new Date().toLocaleTimeString();
+
+    // Update memory chart
+    if (metrics.system_memory_usage_percent !== undefined) {
+        metricsHistory.memory.push(metrics.system_memory_usage_percent);
+        metricsHistory.timestamps.push(now);
+
+        if (metricsHistory.memory.length > 20) {
+            metricsHistory.memory.shift();
+            metricsHistory.timestamps.shift();
+        }
+
+        memoryChart.data.labels = [...metricsHistory.timestamps];
+        memoryChart.data.datasets[0].data = [...metricsHistory.memory];
+        memoryChart.update();
+    }
+
+    // Update disk chart
+    if (metrics.system_disk_usage_percent !== undefined) {
+        metricsHistory.disk.push(metrics.system_disk_usage_percent);
+
+        if (metricsHistory.disk.length > 20) {
+            metricsHistory.disk.shift();
+        }
+
+        diskChart.data.labels = [...metricsHistory.timestamps];
+        diskChart.data.datasets[0].data = [...metricsHistory.disk];
+        diskChart.update();
+    }
+}
+
+function updateActiveAlerts(alerts) {
+    if (!alerts || alerts.length === 0) {
+        document.getElementById('active-alerts').innerHTML =
+            '<p class="text-muted text-center mb-0">No active alerts</p>';
+        return;
+    }
+
+    const alertsHtml = alerts.map(alert => {
+        const severityClass = `alert-${alert.severity}`;
+        const severityIcon = {
+            'critical': 'exclamation-triangle',
+            'warning': 'exclamation-circle',
+            'info': 'info-circle'
+        }[alert.severity] || 'info-circle';
+
+        return `
+            <div class="alert alert-${alert.severity === 'critical' ? 'danger' : alert.severity === 'warning' ? 'warning' : 'info'} d-flex align-items-start mb-2">
+                <i class="fas fa-${severityIcon} me-2 mt-1"></i>
+                <div class="flex-grow-1">
+                    <strong>${alert.name}</strong>
+                    <br>
+                    <small class="text-muted">${alert.description}</small>
+                    <br>
+                    <small class="text-muted">${new Date(alert.created_at).toLocaleString()}</small>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    document.getElementById('active-alerts').innerHTML = alertsHtml;
+}
+
+function parsePrometheusMetrics(metricsText) {
+    const metrics = {};
+    const lines = metricsText.split('\n');
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('#') || !trimmed) continue;
+
+        if (trimmed.includes('{')) {
+            const metricName = trimmed.split('{')[0];
+            const value = trimmed.split('} ')[1];
+            if (value) {
+                metrics[metricName] = parseFloat(value) || 0;
+            }
+        } else {
+            const parts = trimmed.split(' ');
+            if (parts.length >= 2) {
+                const metricName = parts[0];
+                const value = parts[1];
+                metrics[metricName] = parseFloat(value) || 0;
+            }
+        }
+    }
+
+    return metrics;
+}
+
+function exportMetrics(format) {
+    if (format === 'prometheus') {
+        fetch('/api/monitoring/metrics')
+            .then(response => response.text())
+            .then(data => {
+                downloadFile(data, 'metrics.txt', 'text/plain');
+            });
+    } else if (format === 'json') {
+        fetch('/api/monitoring/metrics')
+            .then(response => response.text())
+            .then(data => {
+                const parsed = parsePrometheusMetrics(data);
+                downloadFile(JSON.stringify(parsed, null, 2), 'metrics.json', 'application/json');
+            });
+    }
+}
+
+function downloadFile(content, filename, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function refreshMetrics() {
+    loadMonitoringData();
+}
+
+// Initialize monitoring when page loads
+document.addEventListener('DOMContentLoaded', initMonitoring);
+</script>
+{% endblock %}

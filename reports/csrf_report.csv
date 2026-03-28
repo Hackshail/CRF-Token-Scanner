@@ -1,0 +1,8 @@
+Page URL,Form Action,HTTP Method,Status,Risk Level,Risk Score,CSRF Token Present,Timestamp
+https://github.com/requests/httpbin,,GET,potential_vulnerability,medium,2,No,2026-03-27T17:08:56.751446
+https://github.com/requests/httpbin,/search/feedback,POST,potential_vulnerability,high,3,No,2026-03-27T17:08:56.751487
+https://github.com/requests/httpbin,/search/custom_scopes,POST,potential_vulnerability,high,3,No,2026-03-27T17:08:56.751516
+https://github.com/rochacbruno/flasgger,,GET,potential_vulnerability,medium,2,No,2026-03-27T17:09:00.449283
+https://github.com/rochacbruno/flasgger,/search/feedback,POST,potential_vulnerability,high,3,No,2026-03-27T17:09:00.449312
+https://github.com/rochacbruno/flasgger,/search/custom_scopes,POST,potential_vulnerability,high,3,No,2026-03-27T17:09:00.449339
+https://httpbin.org/forms/post,/post,POST,potential_vulnerability,high,3,No,2026-03-27T17:09:01.577380

@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}New Scan - CSRF Scanner{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card card-dashboard">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-plus me-2"></i>Start New CSRF Scan
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="scan-form">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="url" class="form-label">
+                                <i class="fas fa-globe me-1"></i>Target URL *
+                            </label>
+                            <input type="url" class="form-control" id="url" name="url"
+                                   placeholder="https://example.com" required>
+                            <div class="form-text">
+                                Enter the full URL of the website to scan for CSRF vulnerabilities
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="depth" class="form-label">
+                                <i class="fas fa-layer-group me-1"></i>Crawl Depth
+                            </label>
+                            <select class="form-select" id="depth" name="depth">
+                                <option value="1">1 - Quick scan</option>
+                                <option value="2" selected>2 - Standard scan</option>
+                                <option value="3">3 - Deep scan</option>
+                                <option value="5">5 - Comprehensive scan</option>
+                            </select>
+                            <div class="form-text">
+                                How deep to crawl the website
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="timeout" class="form-label">
+                                <i class="fas fa-clock me-1"></i>Request Timeout (seconds)
+                            </label>
+                            <input type="number" class="form-control" id="timeout" name="timeout"
+                                   value="15" min="5" max="60">
+                            <div class="form-text">
+                                Timeout for each HTTP request
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="max_urls" class="form-label">
+                                <i class="fas fa-list me-1"></i>Maximum URLs
+                            </label>
+                            <input type="number" class="form-control" id="max_urls" name="max_urls"
+                                   value="100" min="10" max="1000">
+                            <div class="form-text">
+                                Maximum number of URLs to scan
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <i class="fas fa-shield-alt me-1"></i>SSL Verification
+                            </label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="verify_ssl" name="verify_ssl" checked>
+                                <label class="form-check-label" for="verify_ssl">
+                                    Verify SSL certificates
+                                </label>
+                            </div>
+                            <div class="form-text">
+                                Uncheck for sites with invalid certificates
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scan Configuration Preview -->
+                    <div class="mt-4 p-3 bg-light rounded" id="scan-preview">
+                        <h6 class="mb-2">
+                            <i class="fas fa-eye me-1"></i>Scan Configuration Preview
+                        </h6>
+                        <div id="preview-content">
+                            Configure your scan settings above to see a preview
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg" id="start-scan-btn">
+                            <i class="fas fa-play me-2"></i>Start Scan
+                        </button>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-lg ms-2">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Scan Tips -->
+        <div class="card card-dashboard mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Scan Tips
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Quick Scan (Depth 1)</h6>
+                        <ul class="small">
+                            <li>Fastest option</li>
+                            <li>Basic vulnerability detection</li>
+                            <li>Good for initial assessment</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Deep Scan (Depth 3+)</h6>
+                        <ul class="small">
+                            <li>Most thorough</li>
+                            <li>Higher chance of detection</li>
+                            <li>May take longer</li>
+                        </ul>
+                    </div>
+                </div>
+                <hr>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Note:</strong> Scanning may take several minutes depending on the target website size and your configuration.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updatePreview() {
+    const url = document.getElementById('url').value;
+    const depth = document.getElementById('depth').value;
+    const timeout = document.getElementById('timeout').value;
+    const maxUrls = document.getElementById('max_urls').value;
+    const verifySsl = document.getElementById('verify_ssl').checked;
+
+    const previewContent = document.getElementById('preview-content');
+
+    if (!url) {
+        previewContent.innerHTML = 'Configure your scan settings above to see a preview';
+        return;
+    }
+
+    const estimatedTime = Math.min(maxUrls * 2, 300); // Rough estimate
+    const timeFormatted = estimatedTime < 60 ? `${estimatedTime}s` : `${Math.ceil(estimatedTime/60)}m`;
+
+    previewContent.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <strong>Target:</strong> ${url}<br>
+                <strong>Depth:</strong> ${depth} levels<br>
+                <strong>SSL Verification:</strong> ${verifySsl ? 'Enabled' : 'Disabled'}
+            </div>
+            <div class="col-md-6">
+                <strong>Timeout:</strong> ${timeout}s per request<br>
+                <strong>Max URLs:</strong> ${maxUrls}<br>
+                <strong>Estimated time:</strong> ${timeFormatted}
+            </div>
+        </div>
+    `;
+}
+
+// Update preview when form changes
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('scan-form');
+    const inputs = form.querySelectorAll('input, select');
+
+    inputs.forEach(input => {
+        input.addEventListener('input', updatePreview);
+        input.addEventListener('change', updatePreview);
+    });
+
+    // Initial preview update
+    updatePreview();
+
+    // Form submission handling
+    form.addEventListener('submit', function(e) {
+        const btn = document.getElementById('start-scan-btn');
+        const originalText = btn.innerHTML;
+
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Starting Scan...';
+        btn.disabled = true;
+
+        // Re-enable after 3 seconds (in case of redirect)
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }, 3000);
+    });
+});
+</script>
+{% endblock %}

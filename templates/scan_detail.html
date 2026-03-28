@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+
+{% block title %}Scan {{ scan_id }} - CSRF Scanner{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Scan Details</h1>
+        <p class="text-muted">Scan ID: <code>{{ scan_id }}</code></p>
+    </div>
+    <div>
+        <a href="{{ url_for('scans_page') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Scans
+        </a>
+    </div>
+</div>
+
+<!-- Scan Status Card -->
+<div class="card card-dashboard mb-4" id="scan-status-card">
+    <div class="card-body">
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results Section -->
+<div id="results-section" style="display: none;">
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Results Table -->
+            <div class="card card-dashboard">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-search me-2"></i>Scan Results
+                    </h5>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary" onclick="exportResults('json')">
+                            <i class="fas fa-download me-1"></i>JSON
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="exportResults('csv')">
+                            <i class="fas fa-download me-1"></i>CSV
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Filters -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm" id="status-filter">
+                                <option value="">All Status</option>
+                                <option value="vulnerable">Vulnerable</option>
+                                <option value="safe">Safe</option>
+                                <option value="error">Error</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm" id="risk-filter">
+                                <option value="">All Risk Levels</option>
+                                <option value="critical">Critical</option>
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" class="form-control form-control-sm" id="search-filter"
+                                   placeholder="Search URLs...">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="results-table">
+                            <thead>
+                                <tr>
+                                    <th>URL</th>
+                                    <th>Status</th>
+                                    <th>Risk Level</th>
+                                    <th>Issues</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-tbody">
+                                <!-- Results will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Summary Cards -->
+            <div class="card card-dashboard mb-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>Summary
+                    </h6>
+                </div>
+                <div class="card-body" id="summary-cards">
+                    <!-- Summary will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Risk Distribution Chart -->
+            <div class="card card-dashboard">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Risk Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="riskChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let scanData = null;
+let resultsData = null;
+let riskChart = null;
+
+function initScanDetail() {
+    loadScanData();
+    // Auto-refresh every 10 seconds if scan is running
+    setInterval(() => {
+        if (scanData && scanData.status === 'running') {
+            loadScanData();
+        }
+    }, 10000);
+}
+
+function loadScanData() {
+    const scanId = '{{ scan_id }}';
+
+    // Load scan status
+    fetch(`/api/scan/${scanId}`)
+        .then(response => response.json())
+        .then(data => {
+            scanData = data;
+            updateScanStatus(data);
+
+            if (data.status !== 'running' && data.results) {
+                loadResultsData();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading scan data:', error);
+            showError('Failed to load scan data');
+        });
+}
+
+function loadResultsData() {
+    const scanId = '{{ scan_id }}';
+
+    fetch(`/api/scan/${scanId}/results`)
+        .then(response => response.json())
+        .then(data => {
+            resultsData = data;
+            showResultsSection();
+            renderResultsTable(data.results);
+            renderSummaryCards(data.summary);
+            renderRiskChart(data.results);
+        })
+        .catch(error => {
+            console.error('Error loading results:', error);
+        });
+}
+
+function updateScanStatus(data) {
+    const statusClass = {
+        'running': 'primary',
+        'completed': 'success',
+        'failed': 'danger',
+        'cancelled': 'warning'
+    }[data.status] || 'secondary';
+
+    const statusIcon = {
+        'running': 'play-circle',
+        'completed': 'check-circle',
+        'failed': 'times-circle',
+        'cancelled': 'ban'
+    }[data.status] || 'question-circle';
+
+    const cardHtml = `
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="fas fa-${statusIcon} fa-2x text-${statusClass} me-3"></i>
+                    <div>
+                        <h4 class="mb-1">Status: <span class="badge bg-${statusClass}">${data.status.toUpperCase()}</span></h4>
+                        <p class="text-muted mb-0">Started: ${new Date(data.start_time).toLocaleString()}</p>
+                    </div>
+                </div>
+                ${data.results_count !== undefined ? `
+                    <div class="row">
+                        <div class="col-3">
+                            <div class="text-center">
+                                <h5 class="text-primary">${data.results_count}</h5>
+                                <small class="text-muted">Total Forms</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="text-center">
+                                <h5 class="text-success">${data.results?.filter(r => r.status === 'safe').length || 0}</h5>
+                                <small class="text-muted">Safe</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="text-center">
+                                <h5 class="text-warning">${data.results?.filter(r => r.status !== 'safe').length || 0}</h5>
+                                <small class="text-muted">Vulnerable</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="text-center">
+                                <h5 class="text-danger">${data.results?.filter(r => r.risk_level === 'critical').length || 0}</h5>
+                                <small class="text-muted">Critical</small>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+            <div class="col-md-4 text-end">
+                ${data.status === 'running' ? `
+                    <button class="btn btn-outline-danger" onclick="cancelScan()">
+                        <i class="fas fa-stop me-1"></i>Cancel Scan
+                    </button>
+                ` : ''}
+                <div class="mt-2">
+                    <small class="text-muted">Last updated: ${new Date().toLocaleTimeString()}</small>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('scan-status-card').innerHTML = cardHtml;
+}
+
+function showResultsSection() {
+    document.getElementById('results-section').style.display = 'block';
+}
+
+function renderResultsTable(results) {
+    const tbody = document.getElementById('results-tbody');
+    const statusFilter = document.getElementById('status-filter').value;
+    const riskFilter = document.getElementById('risk-filter').value;
+    const searchFilter = document.getElementById('search-filter').value.toLowerCase();
+
+    const filteredResults = results.filter(result => {
+        if (statusFilter && result.status !== statusFilter) return false;
+        if (riskFilter && result.risk_level !== riskFilter) return false;
+        if (searchFilter && !result.url.toLowerCase().includes(searchFilter)) return false;
+        return true;
+    });
+
+    tbody.innerHTML = filteredResults.map(result => {
+        const statusBadge = result.status === 'safe'
+            ? '<span class="badge bg-success">Safe</span>'
+            : '<span class="badge bg-danger">Vulnerable</span>';
+
+        const riskBadge = {
+            'critical': 'badge bg-danger',
+            'high': 'badge bg-warning',
+            'medium': 'badge bg-info',
+            'low': 'badge bg-secondary'
+        }[result.risk_level] || 'badge bg-secondary';
+
+        const issues = result.issues ? result.issues.join(', ') : 'None';
+
+        return `
+            <tr>
+                <td>
+                    <a href="${result.url}" target="_blank" class="text-truncate d-inline-block" style="max-width: 300px;">
+                        ${result.url}
+                    </a>
+                </td>
+                <td>${statusBadge}</td>
+                <td><span class="${riskBadge}">${result.risk_level || 'N/A'}</span></td>
+                <td class="text-truncate" style="max-width: 200px;" title="${issues}">${issues}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="viewResultDetails(${JSON.stringify(result).replace(/"/g, '&quot;')})">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderSummaryCards(summary) {
+    const summaryHtml = `
+        <div class="row g-2">
+            <div class="col-6">
+                <div class="p-2 bg-light rounded text-center">
+                    <div class="h5 mb-0 text-primary">${summary.total_forms}</div>
+                    <small class="text-muted">Total Forms</small>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="p-2 bg-light rounded text-center">
+                    <div class="h5 mb-0 text-success">${summary.total_forms - summary.vulnerable_forms}</div>
+                    <small class="text-muted">Safe Forms</small>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="p-2 bg-warning rounded text-center text-white">
+                    <div class="h5 mb-0">${summary.vulnerable_forms}</div>
+                    <small>Vulnerable</small>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="p-2 bg-danger rounded text-center text-white">
+                    <div class="h5 mb-0">${summary.critical_forms}</div>
+                    <small>Critical</small>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('summary-cards').innerHTML = summaryHtml;
+}
+
+function renderRiskChart(results) {
+    const riskCounts = {
+        critical: 0,
+        high: 0,
+        medium: 0,
+        low: 0
+    };
+
+    results.forEach(result => {
+        if (result.risk_level && riskCounts.hasOwnProperty(result.risk_level)) {
+            riskCounts[result.risk_level]++;
+        }
+    });
+
+    const ctx = document.getElementById('riskChart').getContext('2d');
+    if (riskChart) {
+        riskChart.destroy();
+    }
+
+    riskChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Critical', 'High', 'Medium', 'Low'],
+            datasets: [{
+                data: [riskCounts.critical, riskCounts.high, riskCounts.medium, riskCounts.low],
+                backgroundColor: [
+                    '#dc3545',
+                    '#ffc107',
+                    '#17a2b8',
+                    '#6c757d'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function cancelScan() {
+    if (!confirm('Are you sure you want to cancel this scan?')) return;
+
+    const scanId = '{{ scan_id }}';
+    fetch(`/api/scan/${scanId}/cancel`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Scan cancelled successfully');
+            loadScanData();
+        } else {
+            alert('Failed to cancel scan');
+        }
+    })
+    .catch(error => {
+        console.error('Error cancelling scan:', error);
+        alert('Error cancelling scan');
+    });
+}
+
+function exportResults(format) {
+    const scanId = '{{ scan_id }}';
+    // In a real implementation, you'd call an export endpoint
+    alert(`Export functionality for ${format.toUpperCase()} would be implemented here`);
+}
+
+function viewResultDetails(result) {
+    // Show detailed result in a modal (simplified)
+    alert(`URL: ${result.url}\nStatus: ${result.status}\nRisk: ${result.risk_level}\nIssues: ${result.issues?.join(', ') || 'None'}`);
+}
+
+// Set up filters
+document.addEventListener('DOMContentLoaded', function() {
+    ['status-filter', 'risk-filter', 'search-filter'].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => {
+            if (resultsData) {
+                renderResultsTable(resultsData.results);
+            }
+        });
+    });
+
+    initScanDetail();
+});
+
+function showError(message) {
+    document.getElementById('scan-status-card').innerHTML = `
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>${message}
+        </div>
+    `;
+}
+</script>
+{% endblock %}

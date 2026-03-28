@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - CSRF Scanner{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Dashboard</h1>
+        <p class="text-muted">Security assessment overview</p>
+    </div>
+    <div>
+        <span id="last-update" class="badge bg-secondary">Loading...</span>
+    </div>
+</div>
+
+<!-- Metrics Cards -->
+<div class="row mb-4" id="metrics-cards">
+    <!-- Cards will be populated by JavaScript -->
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card card-dashboard">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Scan Activity (Last 24h)
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="scanActivityChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-dashboard">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-server me-2"></i>System Health
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="health-status">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Scans and Alerts -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card card-dashboard">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clock me-2"></i>Recent Scans
+                </h5>
+                <a href="{{ url_for('scans_page') }}" class="btn btn-sm btn-outline-primary">
+                    View All
+                </a>
+            </div>
+            <div class="card-body">
+                <div id="recent-scans">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card card-dashboard">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Active Alerts
+                </h5>
+                <a href="{{ url_for('monitoring') }}" class="btn btn-sm btn-outline-warning">
+                    View All
+                </a>
+            </div>
+            <div class="card-body">
+                <div id="active-alerts">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let scanActivityChart;
+let refreshInterval;
+
+function initDashboard() {
+    // Initialize chart
+    const ctx = document.getElementById('scanActivityChart').getContext('2d');
+    scanActivityChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Scans',
+                data: [],
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    // Load dashboard data
+    loadDashboardData();
+
+    // Set up auto-refresh every 30 seconds
+    refreshInterval = setInterval(loadDashboardData, 30000);
+}
+
+function loadDashboardData() {
+    fetch('/api/dashboard/stats')
+        .then(response => response.json())
+        .then(data => {
+            updateMetricsCards(data);
+            updateHealthStatus(data.health);
+            updateRecentScans(data);
+            updateActiveAlerts(data.alerts);
+            updateScanActivityChart(data);
+
+            // Update last refresh time
+            document.getElementById('last-update').textContent =
+                `Last updated: ${new Date().toLocaleTimeString()}`;
+        })
+        .catch(error => {
+            console.error('Error loading dashboard data:', error);
+            document.getElementById('last-update').textContent = 'Error loading data';
+        });
+}
+
+function updateMetricsCards(data) {
+    const metricsHtml = `
+        <div class="col-md-3 mb-3">
+            <div class="card metric-card text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-play-circle fa-2x mb-2"></i>
+                    <h3 class="card-title">${data.active_scans}</h3>
+                    <p class="card-text">Active Scans</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card metric-card text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <h3 class="card-title">${data.completed_scans}</h3>
+                    <p class="card-text">Completed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card metric-card text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-times-circle fa-2x mb-2"></i>
+                    <h3 class="card-title">${data.failed_scans}</h3>
+                    <p class="card-text">Failed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card metric-card text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                    <h3 class="card-title">${data.total_scans}</h3>
+                    <p class="card-text">Total Scans</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('metrics-cards').innerHTML = metricsHtml;
+}
+
+function updateHealthStatus(health) {
+    const statusClass = {
+        'healthy': 'status-healthy',
+        'unhealthy': 'status-error',
+        'unknown': 'status-unknown'
+    }[health.status] || 'status-unknown';
+
+    const statusIcon = {
+        'healthy': 'fas fa-check-circle',
+        'unhealthy': 'fas fa-times-circle',
+        'unknown': 'fas fa-question-circle'
+    }[health.status] || 'fas fa-question-circle';
+
+    const healthHtml = `
+        <div class="text-center mb-3">
+            <i class="${statusIcon} fa-3x ${statusClass}"></i>
+            <h5 class="mt-2 ${statusClass}">${health.status.toUpperCase()}</h5>
+        </div>
+        <div class="row text-center">
+            <div class="col-6">
+                <div class="mb-2">
+                    <i class="fas fa-memory text-info"></i>
+                    <small class="d-block">Memory</small>
+                    <strong>${health.checks?.memory?.usage_percent?.toFixed(1) || 'N/A'}%</strong>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="mb-2">
+                    <i class="fas fa-hdd text-warning"></i>
+                    <small class="d-block">Disk</small>
+                    <strong>${health.checks?.disk?.usage_percent?.toFixed(1) || 'N/A'}%</strong>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('health-status').innerHTML = healthHtml;
+}
+
+function updateRecentScans(data) {
+    const scans = data.scans?.slice(0, 5) || [];
+    let scansHtml = '';
+
+    if (scans.length === 0) {
+        scansHtml = '<p class="text-muted text-center">No recent scans</p>';
+    } else {
+        scans.forEach(scan => {
+            const statusClass = `scan-status-${scan.status}`;
+            const statusIcon = {
+                'running': 'fas fa-play',
+                'completed': 'fas fa-check',
+                'failed': 'fas fa-times',
+                'cancelled': 'fas fa-ban'
+            }[scan.status] || 'fas fa-question';
+
+            scansHtml += `
+                <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                    <div>
+                        <strong>${scan.scan_id}</strong>
+                        <br>
+                        <small class="text-muted">${new Date(scan.start_time).toLocaleString()}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-${statusClass === 'scan-status-completed' ? 'success' :
+                                               statusClass === 'scan-status-running' ? 'primary' :
+                                               statusClass === 'scan-status-failed' ? 'danger' : 'secondary'}">
+                            <i class="${statusIcon} me-1"></i>${scan.status}
+                        </span>
+                        <br>
+                        <small class="text-muted">${scan.results_count || 0} results</small>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    document.getElementById('recent-scans').innerHTML = scansHtml;
+}
+
+function updateActiveAlerts(alerts) {
+    let alertsHtml = '';
+
+    if (alerts.length === 0) {
+        alertsHtml = '<p class="text-muted text-center">No active alerts</p>';
+    } else {
+        alerts.forEach(alert => {
+            const severityClass = `alert-${alert.severity}`;
+            const severityIcon = {
+                'critical': 'fas fa-exclamation-triangle',
+                'warning': 'fas fa-exclamation-circle',
+                'info': 'fas fa-info-circle'
+            }[alert.severity] || 'fas fa-info-circle';
+
+            alertsHtml += `
+                <div class="alert-card ${severityClass} p-2 mb-2 border rounded">
+                    <div class="d-flex align-items-start">
+                        <i class="${severityIcon} me-2 mt-1"></i>
+                        <div class="flex-grow-1">
+                            <strong>${alert.name}</strong>
+                            <br>
+                            <small class="text-muted">${alert.description}</small>
+                            <br>
+                            <small class="text-muted">${new Date(alert.created_at).toLocaleString()}</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    document.getElementById('active-alerts').innerHTML = alertsHtml;
+}
+
+function updateScanActivityChart(data) {
+    // This is a simplified version - in production you'd track historical data
+    const now = new Date();
+    const labels = [];
+    const values = [];
+
+    // Generate last 24 hours labels
+    for (let i = 23; i >= 0; i--) {
+        const hour = new Date(now.getTime() - i * 60 * 60 * 1000);
+        labels.push(hour.getHours() + ':00');
+        values.push(Math.floor(Math.random() * 5)); // Mock data
+    }
+
+    scanActivityChart.data.labels = labels;
+    scanActivityChart.data.datasets[0].data = values;
+    scanActivityChart.update();
+}
+
+// Initialize dashboard when page loads
+document.addEventListener('DOMContentLoaded', initDashboard);
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+});
+</script>
+{% endblock %}

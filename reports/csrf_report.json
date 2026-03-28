@@ -1,0 +1,182 @@
+{
+  "metadata": {
+    "timestamp": "2026-03-27T17:09:01.583184",
+    "report_type": "CSRF_Vulnerability_Assessment",
+    "total_forms_scanned": 7,
+    "generation_date": "2026-03-27T17:09:01.583155"
+  },
+  "summary": {
+    "total_forms": 7,
+    "vulnerable_forms": 7,
+    "safe_forms": 0,
+    "critical_findings": 0,
+    "high_risk_findings": 5,
+    "medium_risk_findings": 2,
+    "post_forms": 5,
+    "forms_without_tokens": 7
+  },
+  "findings": {
+    "critical": [],
+    "high": [
+      {
+        "url": "https://github.com/requests/httpbin",
+        "action": "/search/feedback",
+        "method": "POST",
+        "csrf_token": null,
+        "csrf_field_name": null,
+        "status": "potential_vulnerability",
+        "timestamp": "2026-03-27T17:08:56.751487",
+        "risk_level": "high",
+        "risk_score": 3
+      },
+      {
+        "url": "https://github.com/requests/httpbin",
+        "action": "/search/custom_scopes",
+        "method": "POST",
+        "csrf_token": null,
+        "csrf_field_name": null,
+        "status": "potential_vulnerability",
+        "timestamp": "2026-03-27T17:08:56.751516",
+        "risk_level": "high",
+        "risk_score": 3
+      },
+      {
+        "url": "https://github.com/rochacbruno/flasgger",
+        "action": "/search/feedback",
+        "method": "POST",
+        "csrf_token": null,
+        "csrf_field_name": null,
+        "status": "potential_vulnerability",
+        "timestamp": "2026-03-27T17:09:00.449312",
+        "risk_level": "high",
+        "risk_score": 3
+      },
+      {
+        "url": "https://github.com/rochacbruno/flasgger",
+        "action": "/search/custom_scopes",
+        "method": "POST",
+        "csrf_token": null,
+        "csrf_field_name": null,
+        "status": "potential_vulnerability",
+        "timestamp": "2026-03-27T17:09:00.449339",
+        "risk_level": "high",
+        "risk_score": 3
+      },
+      {
+        "url": "https://httpbin.org/forms/post",
+        "action": "/post",
+        "method": "POST",
+        "csrf_token": null,
+        "csrf_field_name": null,
+        "status": "potential_vulnerability",
+        "timestamp": "2026-03-27T17:09:01.577380",
+        "risk_level": "high",
+        "risk_score": 3
+      }
+    ],
+    "medium": [
+      {
+        "url": "https://github.com/requests/httpbin",
+        "action": "",
+        "method": "GET",
+        "csrf_token": null,
+        "csrf_field_name": null,
+        "status": "potential_vulnerability",
+        "timestamp": "2026-03-27T17:08:56.751446",
+        "risk_level": "medium",
+        "risk_score": 2
+      },
+      {
+        "url": "https://github.com/rochacbruno/flasgger",
+        "action": "",
+        "method": "GET",
+        "csrf_token": null,
+        "csrf_field_name": null,
+        "status": "potential_vulnerability",
+        "timestamp": "2026-03-27T17:09:00.449283",
+        "risk_level": "medium",
+        "risk_score": 2
+      }
+    ],
+    "low": []
+  },
+  "detailed_results": [
+    {
+      "url": "https://github.com/requests/httpbin",
+      "action": "",
+      "method": "GET",
+      "csrf_token": null,
+      "csrf_field_name": null,
+      "status": "potential_vulnerability",
+      "timestamp": "2026-03-27T17:08:56.751446",
+      "risk_level": "medium",
+      "risk_score": 2
+    },
+    {
+      "url": "https://github.com/requests/httpbin",
+      "action": "/search/feedback",
+      "method": "POST",
+      "csrf_token": null,
+      "csrf_field_name": null,
+      "status": "potential_vulnerability",
+      "timestamp": "2026-03-27T17:08:56.751487",
+      "risk_level": "high",
+      "risk_score": 3
+    },
+    {
+      "url": "https://github.com/requests/httpbin",
+      "action": "/search/custom_scopes",
+      "method": "POST",
+      "csrf_token": null,
+      "csrf_field_name": null,
+      "status": "potential_vulnerability",
+      "timestamp": "2026-03-27T17:08:56.751516",
+      "risk_level": "high",
+      "risk_score": 3
+    },
+    {
+      "url": "https://github.com/rochacbruno/flasgger",
+      "action": "",
+      "method": "GET",
+      "csrf_token": null,
+      "csrf_field_name": null,
+      "status": "potential_vulnerability",
+      "timestamp": "2026-03-27T17:09:00.449283",
+      "risk_level": "medium",
+      "risk_score": 2
+    },
+    {
+      "url": "https://github.com/rochacbruno/flasgger",
+      "action": "/search/feedback",
+      "method": "POST",
+      "csrf_token": null,
+      "csrf_field_name": null,
+      "status": "potential_vulnerability",
+      "timestamp": "2026-03-27T17:09:00.449312",
+      "risk_level": "high",
+      "risk_score": 3
+    },
+    {
+      "url": "https://github.com/rochacbruno/flasgger",
+      "action": "/search/custom_scopes",
+      "method": "POST",
+      "csrf_token": null,
+      "csrf_field_name": null,
+      "status": "potential_vulnerability",
+      "timestamp": "2026-03-27T17:09:00.449339",
+      "risk_level": "high",
+      "risk_score": 3
+    },
+    {
+      "url": "https://httpbin.org/forms/post",
+      "action": "/post",
+      "method": "POST",
+      "csrf_token": null,
+      "csrf_field_name": null,
+      "status": "potential_vulnerability",
+      "timestamp": "2026-03-27T17:09:01.577380",
+      "risk_level": "high",
+      "risk_score": 3
+    }
+  ]
+}

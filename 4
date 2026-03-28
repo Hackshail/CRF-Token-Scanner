@@ -1,0 +1,162 @@
+# CSRF Vulnerability Scanner - Production Configuration
+
+This directory contains a comprehensive CSRF (Cross-Site Request Forgery) vulnerability assessment toolkit designed for real-world security testing.
+
+## Project Structure
+
+- **1st.py**: Core CSRF Scanner engine
+  - Advanced HTML crawling and form detection
+  - Configurable retry logic and rate limiting
+  - Multiple CSRF token pattern matching
+  - Referer header validation testing
+  - Token replay attack detection
+  - Risk scoring system
+
+- **2nd.py**: Flask REST API Server
+  - Asynchronous scan management
+  - Multi-endpoint API with filtering
+  - API key authentication
+  - Concurrent scan support
+  - Real-time scan status tracking
+  - RESTful design with proper HTTP status codes
+
+- **3rd.py**: Report Generation Engine
+  - JSON report output
+  - CSV export for spreadsheet analysis
+  - Interactive HTML reports with charts
+  - Executive summaries
+  - Risk categorization
+  - Security recommendations
+
+## Quick Start
+
+### Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+### Running the CSRF Scanner
+
+```python
+from src.base_ import CSRFScanner, ScanConfig
+
+config = ScanConfig()
+config.timeout = 15
+config.max_urls = 50
+
+scanner = CSRFScanner('https://target-site.com', depth=2, config=config)
+results = scanner.scan()
+```
+
+### Starting the API Server
+
+```bash
+python 2nd.py
+```
+
+The server will be available at `http://localhost:5000`
+
+### Generating Reports
+
+```python
+from src.report_gen import ReportGenerator
+
+generator = ReportGenerator(results)
+generator.generate_all_reports('vulnerability_report')
+```
+
+## API Endpoints
+
+All endpoints require `X-API-Key` header for authentication.
+
+- `POST /api/v1/scan` - Start new scan
+- `GET /api/v1/scan/{id}` - Get scan status
+- `GET /api/v1/scan/{id}/results` - Get detailed results
+- `DELETE /api/v1/scan/{id}` - Cancel scan
+- `GET /api/v1/scans` - List all active scans
+- `GET /health` - Health check
+
+## Configuration Options
+
+```python
+config = ScanConfig()
+config.timeout = 10              # Request timeout in seconds
+config.max_retries = 3           # Retry attempts for failed requests
+config.backoff_factor = 0.5      # Exponential backoff multiplier
+config.rate_limit_delay = 0.5    # Delay between requests (seconds)
+config.max_urls = 100            # Maximum URLs to crawl
+config.skip_external_links = True # Ignore links outside target domain
+config.verify_ssl = True         # Verify SSL certificates
+```
+
+## Security Considerations
+
+### Testing Scope
+- Always obtain written authorization before testing
+- Test only on systems you own or have explicit permission to test
+- Respect rate limits and implement throttling
+
+### Best Practices
+- Use in controlled environments for authorized security assessments
+- Limit crawl depth to prevent excessive traffic
+- Implement proper logging and monitoring
+- Secure API keys in production environments
+
+## Vulnerability Detection Methods
+
+1. **Missing CSRF Tokens**: Forms without any CSRF protection
+2. **Referer Validation Bypass**: Weak referer header checking
+3. **Token Replay Attacks**: Reusable or improperly validated tokens
+4. **State-Changing Operations**: Unprotected POST/PUT/DELETE methods
+
+## Report Output
+
+### JSON Format
+```json
+{
+  "metadata": { ... },
+  "summary": { ... },
+  "findings": { "critical": [...], "high": [...] },
+  "detailed_results": [...]
+}
+```
+
+### CSV Format
+Ideal for data analysis in Excel/Google Sheets with columns:
+- Page URL
+- Form Action
+- HTTP Method
+- Risk Level
+- Token Status
+
+### HTML Format
+Interactive report with:
+- Executive summary dashboard
+- Categorized findings by severity
+- Detailed vulnerability table
+- Security recommendations
+
+## Troubleshooting
+
+### Slow Scanning
+- Increase `rate_limit_delay` or reduce `max_urls`
+- Lower `depth` parameter
+- Use `skip_external_links = True`
+
+### SSL Certificate Errors
+- Set `verify_ssl = False` for testing (not recommended for production)
+- Install proper SSL certificates
+
+### Network Issues
+- Increase `timeout` value
+- Adjust `max_retries` setting
+- Enable proxy support if needed
+
+## Dependencies
+
+See `requirements.txt` for complete list.
+
+## License
+
+This tool is provided for authorized security testing only.
