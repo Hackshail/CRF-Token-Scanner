@@ -49,9 +49,14 @@ def start_api_server():
 def start_dashboard():
     """Start the dashboard in background"""
     print("[START] Starting CSRF Scanner Dashboard...")
+
+    # Ensure the dashboard port is provided in the environment for consistency
+    dashboard_env = dict(os.environ)
+    dashboard_env["DASHBOARD_PORT"] = str(os.getenv("DASHBOARD_PORT", "3000"))
+
     dashboard_process = subprocess.Popen([
         sys.executable, "dashboard.py"
-    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=dashboard_env)
 
     # Wait a bit for server to start
     time.sleep(3)
