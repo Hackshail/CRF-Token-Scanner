@@ -257,9 +257,9 @@ def monitoring():
     return render_template('monitoring.html', user=session.get('user'))
 
 
-@app.route('/api/monitoring/metrics')
+@app.route('/api/dashboard/metrics')
 @login_required
-def get_metrics():
+def get_dashboard_metrics():
     """Get monitoring metrics"""
     response = api_request('GET', '/metrics')
     if response:
@@ -277,9 +277,9 @@ def get_health():
     return jsonify({'status': 'unknown'})
 
 
-@app.route('/api/monitoring/alerts')
+@app.route('/api/dashboard/alerts')
 @login_required
-def get_alerts():
+def get_dashboard_alerts():
     """Get active alerts"""
     response = api_request('GET', '/alerts')
     if response:
@@ -325,6 +325,27 @@ def parse_prometheus_metrics(metrics_text):
 def inject_now():
     """Inject current datetime into templates"""
     return {'now': datetime.now()}
+
+
+def register_dashboard_routes(target_app):
+    """Register dashboard routes with a target Flask app"""
+    # Copy all routes from dashboard app to target app
+    for rule in app.url_map.iter_rules():
+        if rule.endpoint not in ['static']:
+            target_app.add_url_rule(
+                rule.rule,
+                rule.endpoint,
+                app.view_functions[rule.endpoint],
+                methods=rule.methods
+            )
+
+    # Copy template folder and other config
+    target_app.template_folder = app.template_folder
+    target_app.static_folder = app.static_folder
+    target_app.secret_key = app.secret_key
+
+    # Copy session config
+    target_app.config.update(app.config)
 
 
 if __name__ == '__main__':

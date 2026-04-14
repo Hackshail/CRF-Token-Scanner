@@ -13,6 +13,7 @@ from monitoring import init_monitoring, metrics_collector, monitor_scan, monitor
 import threading
 import queue
 
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -33,40 +34,6 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 # Scan queue for async operations
 scan_queue = queue.Queue()
 active_scans = {}
-
-
-@app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': datetime.now().isoformat(),
-        'version': '1.0.0'
-    }), 200
-
-
-@app.route('/metrics', methods=['GET'])
-def get_metrics():
-    """Prometheus metrics endpoint"""
-    return metrics_collector.get_metrics_text(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
-
-
-@app.route('/alerts', methods=['GET'])
-def get_alerts():
-    """Active alerts endpoint"""
-    alerts = metrics_collector.get_active_alerts()
-    alerts_data = [{
-        'id': alert.id,
-        'name': alert.name,
-        'description': alert.description,
-        'severity': alert.severity.value,
-        'status': alert.status.value,
-        'created_at': alert.created_at.isoformat(),
-        'resolved_at': alert.resolved_at.isoformat() if alert.resolved_at else None,
-        'labels': alert.labels
-    } for alert in alerts]
-    
-    return jsonify({'alerts': alerts_data}), 200
 
 
 @app.route('/api/v1/auth/login', methods=['POST'])
@@ -307,31 +274,57 @@ def list_scans():
     return jsonify({'scans': scans_list, 'total': len(scans_list)}), 200
 
 
+# Simple dashboard integration - replace API docs with dashboard redirect
 @app.route('/', methods=['GET'])
 def index():
-    """Serve API documentation"""
+    """Serve dashboard or redirect to login"""
     return '''
-    <h1>CSRF Vulnerability Scanner API</h1>
-    <h2>Authentication:</h2>
-    <ul>
-        <li>POST /api/v1/auth/login - Login with username/password</li>
-        <li>POST /api/v1/auth/refresh - Refresh access token</li>
-        <li>GET /api/v1/auth/me - Get current user info</li>
-    </ul>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>CSRF Scanner Dashboard</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+            .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            h1 { color: #333; text-align: center; }
+            .login-form { max-width: 400px; margin: 20px auto; }
+            input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
+            button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+            button:hover { background: #0056b3; }
+            .api-info { margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 5px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🔒 CSRF Vulnerability Scanner</h1>
+            <p style="text-align: center; color: #666;">Production-ready web application security assessment tool</p>
 
-    <h2>Scan Endpoints:</h2>
-    <ul>
-        <li>POST /api/v1/scan - Start a new scan (Admin/Security/Developer)</li>
-        <li>GET /api/v1/scan/{scan_id} - Get scan status</li>
-        <li>GET /api/v1/scan/{scan_id}/results - Get detailed results</li>
-        <li>DELETE /api/v1/scan/{scan_id} - Cancel scan (Admin/Security only)</li>
-        <li>GET /api/v1/scans - List all scans</li>
-    </ul>
+            <div class="login-form">
+                <h3>Dashboard Login</h3>
+                <form action="/api/v1/auth/login" method="post">
+                    <input type="text" name="username" placeholder="Username" required>
+                    <input type="password" name="password" placeholder="Password" required>
+                    <button type="submit">Login</button>
+                </form>
+                <p style="text-align: center; margin-top: 10px; font-size: 14px; color: #666;">
+                    Default: admin / admin123!
+                </p>
+            </div>
 
-    <h2>Authentication:</h2>
-    <p>All protected endpoints require Bearer token in Authorization header</p>
-    <p>Rate limits: Login (5/min), Scans (10/hour), General API (100/hour)</p>
-    ''', 200
+            <div class="api-info">
+                <h3>🚀 API Endpoints</h3>
+                <ul>
+                    <li><strong>POST</strong> /api/v1/auth/login - User authentication</li>
+                    <li><strong>POST</strong> /api/v1/scan - Start security scan</li>
+                    <li><strong>GET</strong> /api/v1/scans - List all scans</li>
+                    <li><strong>GET</strong> /health - System health check</li>
+                    <li><strong>GET</strong> /metrics - Prometheus metrics</li>
+                </ul>
+            </div>
+        </div>
+    </body>
+    </html>
+    '''
 
 
 @app.errorhandler(404)
