@@ -9,65 +9,73 @@ logger = logging.getLogger(__name__)
 
 class ReportGenerator:
     """Production-ready report generator for CSRF vulnerability findings"""
-    
+
     def __init__(self, results: List[Dict]):
         self.results = results
         self.generation_time = datetime.now().isoformat()
-        
-    def generate_json_report(self, filename: str = 'report.json') -> str:
+
+    def generate_json_report(self, filename: str = "report.json") -> str:
         """Generate comprehensive JSON vulnerability report"""
         timestamp = datetime.now().isoformat()
-        
+
         report = {
-            'metadata': {
-                'timestamp': timestamp,
-                'report_type': 'CSRF_Vulnerability_Assessment',
-                'total_forms_scanned': len(self.results),
-                'generation_date': self.generation_time
+            "metadata": {
+                "timestamp": timestamp,
+                "report_type": "CSRF_Vulnerability_Assessment",
+                "total_forms_scanned": len(self.results),
+                "generation_date": self.generation_time,
             },
-            'summary': self._generate_summary(),
-            'findings': self._categorize_by_risk(),
-            'detailed_results': self.results
+            "summary": self._generate_summary(),
+            "findings": self._categorize_by_risk(),
+            "detailed_results": self.results,
         }
-        
-        with open(filename, 'w') as f:
+
+        with open(filename, "w") as f:
             json.dump(report, f, indent=2)
-        
+
         logger.info(f"JSON report generated: {filename}")
         return filename
-            
-    def generate_csv_report(self, filename: str = 'report.csv') -> str:
+
+    def generate_csv_report(self, filename: str = "report.csv") -> str:
         """Generate CSV vulnerability report for spreadsheet analysis"""
-        with open(filename, 'w', newline='') as f:
+        with open(filename, "w", newline="") as f:
             writer = csv.writer(f)
-            
+
             # Write headers
-            headers = ['Page URL', 'Form Action', 'HTTP Method', 'Status', 
-                      'Risk Level', 'Risk Score', 'CSRF Token Present', 'Timestamp']
+            headers = [
+                "Page URL",
+                "Form Action",
+                "HTTP Method",
+                "Status",
+                "Risk Level",
+                "Risk Score",
+                "CSRF Token Present",
+                "Timestamp",
+            ]
             writer.writerow(headers)
-            
+
             # Write data rows
             for result in self.results:
                 row = [
-                    result.get('url', 'N/A'),
-                    result.get('action', 'N/A'),
-                    result.get('method', 'N/A'),
-                    result.get('status', 'N/A'),
-                    result.get('risk_level', 'N/A'),
-                    result.get('risk_score', 'N/A'),
-                    'Yes' if result.get('csrf_token') else 'No',
-                    result.get('timestamp', 'N/A')
+                    result.get("url", "N/A"),
+                    result.get("action", "N/A"),
+                    result.get("method", "N/A"),
+                    result.get("status", "N/A"),
+                    result.get("risk_level", "N/A"),
+                    result.get("risk_score", "N/A"),
+                    "Yes" if result.get("csrf_token") else "No",
+                    result.get("timestamp", "N/A"),
                 ]
                 writer.writerow(row)
-        
+
         logger.info(f"CSV report generated: {filename}")
         return filename
-    
-    def generate_html_report(self, filename: str = 'report.html') -> str:
+
+    def generate_html_report(self, filename: str = "report.html") -> str:
         """Generate interactive HTML report with statistics"""
         summary = self._generate_summary()
         categorized = self._categorize_by_risk()
-        
+
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -149,46 +157,51 @@ class ReportGenerator:
         </body>
         </html>
         """
-        
-        with open(filename, 'w') as f:
+
+        with open(filename, "w") as f:
             f.write(html_content)
-        
+
         logger.info(f"HTML report generated: {filename}")
         return filename
-    
+
     def _generate_summary(self) -> Dict:
         """Generate summary statistics"""
         return {
-            'total_forms': len(self.results),
-            'vulnerable_forms': len([r for r in self.results if r.get('status') != 'safe']),
-            'safe_forms': len([r for r in self.results if r.get('status') == 'safe']),
-            'critical_findings': len([r for r in self.results if r.get('risk_level') == 'critical']),
-            'high_risk_findings': len([r for r in self.results if r.get('risk_level') == 'high']),
-            'medium_risk_findings': len([r for r in self.results if r.get('risk_level') == 'medium']),
-            'post_forms': len([r for r in self.results if r.get('method') == 'POST']),
-            'forms_without_tokens': len([r for r in self.results if not r.get('csrf_token')])
+            "total_forms": len(self.results),
+            "vulnerable_forms": len(
+                [r for r in self.results if r.get("status") != "safe"]
+            ),
+            "safe_forms": len([r for r in self.results if r.get("status") == "safe"]),
+            "critical_findings": len(
+                [r for r in self.results if r.get("risk_level") == "critical"]
+            ),
+            "high_risk_findings": len(
+                [r for r in self.results if r.get("risk_level") == "high"]
+            ),
+            "medium_risk_findings": len(
+                [r for r in self.results if r.get("risk_level") == "medium"]
+            ),
+            "post_forms": len([r for r in self.results if r.get("method") == "POST"]),
+            "forms_without_tokens": len(
+                [r for r in self.results if not r.get("csrf_token")]
+            ),
         }
-    
+
     def _categorize_by_risk(self) -> Dict[str, List[Dict]]:
         """Categorize findings by risk level"""
-        categorized = {
-            'critical': [],
-            'high': [],
-            'medium': [],
-            'low': []
-        }
-        
+        categorized = {"critical": [], "high": [], "medium": [], "low": []}
+
         for result in self.results:
-            risk = result.get('risk_level', 'medium')
+            risk = result.get("risk_level", "medium")
             if risk in categorized:
                 categorized[risk].append(result)
-        
+
         return categorized
-    
+
     def _format_html_result(self, result: Dict, risk_level: str) -> str:
         """Format single result for HTML"""
         css_class = risk_level
-        return f'''
+        return f"""
         <div class="{css_class}">
             <strong>URL:</strong> {result.get('url', 'N/A')}<br>
             <strong>Action:</strong> {result.get('action', 'N/A')}<br>
@@ -196,14 +209,14 @@ class ReportGenerator:
             <strong>Status:</strong> {result.get('status', 'N/A')}<br>
             <strong>CSRF Token:</strong> {"Present" if result.get('csrf_token') else "Missing"}
         </div>
-        '''
-    
-    def generate_all_reports(self, basename: str = 'report') -> Dict[str, str]:
+        """
+
+    def generate_all_reports(self, basename: str = "report") -> Dict[str, str]:
         """Generate all report formats"""
         reports = {
-            'json': self.generate_json_report(f'{basename}.json'),
-            'csv': self.generate_csv_report(f'{basename}.csv'),
-            'html': self.generate_html_report(f'{basename}.html')
+            "json": self.generate_json_report(f"{basename}.json"),
+            "csv": self.generate_csv_report(f"{basename}.csv"),
+            "html": self.generate_html_report(f"{basename}.html"),
         }
         logger.info(f"All reports generated: {reports}")
         return reports

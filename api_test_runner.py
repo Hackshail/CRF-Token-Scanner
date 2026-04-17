@@ -10,6 +10,7 @@ import time
 
 BASE_URL = "http://localhost:5000"
 
+
 def test_authentication():
     """Test JWT authentication flow"""
     print("Testing Authentication...")
@@ -17,18 +18,19 @@ def test_authentication():
     # Test login
     login_data = {
         "username": "admin",
-        "password": "admin123!"  # Default password - CHANGE IN PRODUCTION!
+        "password": "admin123!",  # Default password - CHANGE IN PRODUCTION!
     }
 
     response = requests.post(f"{BASE_URL}/api/v1/auth/login", json=login_data)
     if response.status_code == 200:
         tokens = response.json()
-        access_token = tokens['access_token']
+        access_token = tokens["access_token"]
         print("[OK] Login successful")
         return access_token
     else:
         print(f"[ERROR] Login failed: {response.text}")
         return None
+
 
 def test_protected_endpoints(access_token):
     """Test protected API endpoints"""
@@ -44,19 +46,17 @@ def test_protected_endpoints(access_token):
         print(f"[ERROR] User info failed: {response.text}")
 
     # Test scan endpoint (should work for admin)
-    scan_data = {
-        "url": "https://httpbin.org",
-        "depth": 1
-    }
+    scan_data = {"url": "https://httpbin.org", "depth": 1}
     response = requests.post(f"{BASE_URL}/api/v1/scan", json=scan_data, headers=headers)
     if response.status_code == 202:
         scan_result = response.json()
-        scan_id = scan_result['scan_id']
+        scan_id = scan_result["scan_id"]
         print(f"[OK] Scan started: {scan_id}")
         return scan_id
     else:
         print(f"[ERROR] Scan failed: {response.text}")
         return None
+
 
 def test_monitoring():
     """Test monitoring endpoints"""
@@ -77,6 +77,7 @@ def test_monitoring():
     else:
         print(f"[ERROR] Metrics failed: {response.status_code}")
 
+
 def test_rate_limiting():
     """Test rate limiting"""
     print("\nTesting Rate Limiting...")
@@ -90,6 +91,7 @@ def test_rate_limiting():
             break
         elif i == 5:
             print("[WARNING] Rate limiting may not be working")
+
 
 def main():
     """Run all tests"""
@@ -126,6 +128,7 @@ def main():
     print("  2. Configure Redis for rate limiting")
     print("  3. Set up monitoring dashboard")
     print("  4. Deploy with docker-compose")
+
 
 if __name__ == "__main__":
     main()

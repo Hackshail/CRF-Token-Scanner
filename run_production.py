@@ -10,6 +10,7 @@ import time
 import os
 from pathlib import Path
 
+
 def check_requirements():
     """Check if required packages are installed"""
     try:
@@ -18,6 +19,7 @@ def check_requirements():
         import bcrypt
         import flask_limiter
         import psutil
+
         print("[OK] All required packages are installed")
         return True
     except ImportError as e:
@@ -25,12 +27,15 @@ def check_requirements():
         print("Run: pip install -r requirements.txt")
         return False
 
+
 def start_api_server():
     """Start the API server in background"""
     print("[START] Starting CSRF Scanner API Server...")
-    api_process = subprocess.Popen([
-        sys.executable, "api_server.py"
-    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    api_process = subprocess.Popen(
+        [sys.executable, "api_server.py"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
 
     # Wait a bit for server to start
     time.sleep(3)
@@ -46,6 +51,7 @@ def start_api_server():
         print("STDERR:", stderr.decode())
         return None
 
+
 def start_dashboard():
     """Start the dashboard in background"""
     print("[START] Starting CSRF Scanner Dashboard...")
@@ -54,9 +60,12 @@ def start_dashboard():
     dashboard_env = dict(os.environ)
     dashboard_env["DASHBOARD_PORT"] = str(os.getenv("DASHBOARD_PORT", "3000"))
 
-    dashboard_process = subprocess.Popen([
-        sys.executable, "dashboard.py"
-    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=dashboard_env)
+    dashboard_process = subprocess.Popen(
+        [sys.executable, "dashboard.py"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=dashboard_env,
+    )
 
     # Wait a bit for server to start
     time.sleep(3)
@@ -71,6 +80,7 @@ def start_dashboard():
         print("STDOUT:", stdout.decode())
         print("STDERR:", stderr.decode())
         return None
+
 
 def main():
     """Main runner function"""
@@ -134,6 +144,7 @@ def main():
             dashboard_process.wait(timeout=5)
 
         print("[OK] All services stopped")
+
 
 if __name__ == "__main__":
     main()
