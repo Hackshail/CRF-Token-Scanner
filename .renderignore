@@ -1,0 +1,55 @@
+# Render-specific ignore patterns
+# These files are in git but should not be deployed to Render
+
+# Virtual environments
+.venv/
+venv/
+
+# Python cache and bytecode
+__pycache__/
+*.pyc
+*.pyo
+*$py.class
+*.egg-info/
+
+# Testing and coverage
+.coverage
+coverage.xml
+.pytest_cache/
+htmlcov/
+.tox/
+.nox/
+
+# Development logs (keep some for debugging)
+*.log
+# But include recent logs if needed for debugging
+!csrf_scan_2026*.log
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Local development files
+.env
+.env.local
+config.local.py
+secrets.json
+
+# Build artifacts
+build/
+dist/
+*.egg
+
+# Jupyter notebooks (if any)
+.ipynb_checkpoints/
+
+# Temporary files
+*.tmp
+*.temp

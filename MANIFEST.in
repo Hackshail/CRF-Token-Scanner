@@ -1,0 +1,46 @@
+# CSRF Scanner - Package Manifest
+# Explicitly include files for distribution
+
+# Include core Python files
+include *.py
+
+# Include configuration files
+include requirements.txt
+include render.yaml
+include Dockerfile
+include docker-compose.yml
+include mypy.ini
+
+# Include documentation
+include README.md
+include RENDER_DEPLOYMENT.md
+
+# Include web templates
+recursive-include templates *.html
+
+# Include test files
+recursive-include tests *.py
+
+# Exclude development files
+exclude .gitignore
+exclude .renderignore
+exclude *.log
+exclude csrf_scan_*.log
+global-exclude *.pyc
+global-exclude __pycache__
+global-exclude .pytest_cache
+global-exclude .mypy_cache
+global-exclude .coverage
+global-exclude coverage.xml
+global-exclude .venv
+global-exclude venv
+global-exclude .DS_Store
+global-exclude Thumbs.db
+global-exclude *.tmp
+global-exclude *.temp
+
+# Exclude runtime generated directories
+prune scan_results
+prune reports
+prune .git
+prune .github

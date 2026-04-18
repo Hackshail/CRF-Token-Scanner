@@ -145,3 +145,41 @@ config.local.py
 # OS
 .DS_Store
 Thumbs.db
+
+# Runtime generated files (deployment specific)
+scan_results/
+reports/
+users.json
+*.db
+*.sqlite3
+
+# Local development and secrets
+config.local.py
+secrets.json
+.env
+.env.local
+debug.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Additional Python cache
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Additional OS files
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
