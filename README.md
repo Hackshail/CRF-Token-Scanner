@@ -75,6 +75,26 @@ python run_production.py
 
 This will start both the API server (port 5000) and dashboard (port 3000).
 
+## 🚀 Deployment
+
+### Render (Recommended)
+Deploy easily to Render with one-click deployment:
+
+1. Push your code to GitHub
+2. Connect your repository to [Render](https://render.com)
+3. Use the provided `render.yaml` configuration
+4. Your app will be live at `https://your-app.onrender.com`
+
+See [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) for detailed instructions.
+
+### Docker
+Build and run with Docker:
+
+```bash
+docker build -t csrf-scanner .
+docker run -p 5000:5000 csrf-scanner
+```
+
 ### Access the Dashboard
 
 1. **Open your browser:** http://localhost:3000
