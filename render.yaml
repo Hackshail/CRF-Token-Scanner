@@ -3,10 +3,7 @@ services:
     name: csrf-scanner
     runtime: python3
     buildCommand: |
-      # Clean up any unwanted files before build
-      find . -name "*.pyc" -delete
-      find . -name "__pycache__" -type d -exec rm -rf {} +
-      find . -name ".pytest_cache" -type d -exec rm -rf {} +
+      bash build-clean.sh
       pip install -r requirements.txt
     startCommand: python api_server.py
     buildFilter:
@@ -20,6 +17,7 @@ services:
       - include: "Dockerfile"
       - include: "docker-compose.yml"
       - include: "mypy.ini"
+      - include: "build-clean.sh"
       - include: "tests/**"
       # Exclude patterns
       - exclude: "**/__pycache__/**"
