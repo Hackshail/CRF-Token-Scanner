@@ -2,9 +2,7 @@ services:
   - type: web
     name: csrf-scanner
     runtime: python3
-    buildCommand: |
-      bash build-clean.sh
-      pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt
     startCommand: python api_server.py
     buildFilter:
       # Include patterns
