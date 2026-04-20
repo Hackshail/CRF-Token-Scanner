@@ -306,53 +306,7 @@ def list_scans():
 @app.route("/", methods=["GET"])
 def index():
     """Serve dashboard or redirect to login"""
-    return """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>CSRF Scanner Dashboard</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
-            .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            h1 { color: #333; text-align: center; }
-            .login-form { max-width: 400px; margin: 20px auto; }
-            input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
-            button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
-            button:hover { background: #0056b3; }
-            .api-info { margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 5px; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>🔒 CSRF Vulnerability Scanner</h1>
-            <p style="text-align: center; color: #666;">Production-ready web application security assessment tool</p>
-
-            <div class="login-form">
-                <h3>Dashboard Login</h3>
-                <form action="/api/v1/auth/login" method="post">
-                    <input type="text" name="username" placeholder="Username" required>
-                    <input type="password" name="password" placeholder="Password" required>
-                    <button type="submit">Login</button>
-                </form>
-                <p style="text-align: center; margin-top: 10px; font-size: 14px; color: #666;">
-                    Default: admin / admin123!
-                </p>
-            </div>
-
-            <div class="api-info">
-                <h3>🚀 API Endpoints</h3>
-                <ul>
-                    <li><strong>POST</strong> /api/v1/auth/login - User authentication</li>
-                    <li><strong>POST</strong> /api/v1/scan - Start security scan</li>
-                    <li><strong>GET</strong> /api/v1/scans - List all scans</li>
-                    <li><strong>GET</strong> /health - System health check</li>
-                    <li><strong>GET</strong> /metrics - Prometheus metrics</li>
-                </ul>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
+    return "Server is up and running!"
 
 
 @app.errorhandler(404)
@@ -638,5 +592,5 @@ def health_check():
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 3000))
     app.run(debug=False, host="0.0.0.0", port=port)

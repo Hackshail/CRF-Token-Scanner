@@ -1,0 +1,16 @@
+{
+  "name": "csrf-scanner-api",
+  "version": "1.0.0",
+  "description": "CSRF Vulnerability Scanner API",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}</content>
+<parameter name="filePath">c:\Users\Shailesh\OneDrive\Desktop\my folder\package.json

@@ -2,8 +2,40 @@ services:
   - type: web
     name: csrf-scanner
     runtime: python3
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      # Clean up any unwanted files before build
+      find . -name "*.pyc" -delete
+      find . -name "__pycache__" -type d -exec rm -rf {} +
+      find . -name ".pytest_cache" -type d -exec rm -rf {} +
+      pip install -r requirements.txt
     startCommand: python api_server.py
+    buildFilter:
+      # Include patterns
+      - include: "*.py"
+      - include: "templates/**"
+      - include: "requirements.txt"
+      - include: "render.yaml"
+      - include: "README.md"
+      - include: "RENDER_DEPLOYMENT.md"
+      - include: "Dockerfile"
+      - include: "docker-compose.yml"
+      - include: "mypy.ini"
+      - include: "tests/**"
+      # Exclude patterns
+      - exclude: "**/__pycache__/**"
+      - exclude: "**/*.pyc"
+      - exclude: "**/.pytest_cache/**"
+      - exclude: "**/*.log"
+      - exclude: "**/scan_results/**"
+      - exclude: "**/reports/**"
+      - exclude: "**/.git/**"
+      - exclude: "**/.github/**"
+      - exclude: "**/.venv/**"
+      - exclude: "**/venv/**"
+      - exclude: "**/.coverage"
+      - exclude: "**/coverage.xml"
+      - exclude: "**/.DS_Store"
+      - exclude: "**/Thumbs.db"
     envVars:
       - key: FLASK_ENV
         value: production
@@ -13,5 +45,15 @@ services:
         generateValue: true
       - key: PYTHONUNBUFFERED
         value: 1
+      - key: JWT_EXPIRY_HOURS
+        value: "24"
+      - key: REFRESH_TOKEN_EXPIRY_DAYS
+        value: "30"
+      - key: USERS_DB_PATH
+        value: "users.json"
     healthCheckPath: /api/v1/health
+    disk:
+      name: csrf-scanner-data
+      mountPath: /opt/render/project/src
+      sizeGB: 10
     plan: starter
