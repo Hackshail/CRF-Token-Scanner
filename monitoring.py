@@ -480,3 +480,10 @@ def monitor_api_request(endpoint: str):
         return wrapper
 
     return decorator
+
+if __name__ == "__main__":
+    app = Flask(__name__)
+    init_monitoring(app)
+
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port, debug=False)
