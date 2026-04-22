@@ -390,7 +390,7 @@ def api_request(method, endpoint, data=None, headers=None):
         return None
 
 
-@app.route("/")
+@app.route("/", methods=["GET", "HEAD"])
 def index():
     """Dashboard home page"""
     if "access_token" not in session:
